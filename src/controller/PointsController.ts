@@ -17,7 +17,14 @@ class PointsCrontroller{
             .distinct()
             .select('points.*');
 
-        return response.json(points);
+
+        const serializedPoints = points.map(point => {
+            return {
+                ... point,
+                image_url: `http://192.168.0.19:3333/uploads/${point.image}`
+            }
+        })
+        return response.json(serializedPoints);
     }
 
     async create(request: Request,response: Response) {
@@ -35,7 +42,7 @@ class PointsCrontroller{
         const trx = await knex.transaction();
 
         const point = {
-            image: 'image-fake',
+            image: request.file.filename,
             name,
             email,
             whatsapp,
@@ -75,12 +82,17 @@ class PointsCrontroller{
             return response.status(400).json({message: 'Point not found...'});
         }
 
+        const serializedPoint = {
+            ... point,
+            image_url: `http://192.168.0.19:3333/uploads/${point.image}`
+        };
+        
         const items = await knex('items')
             .join('point-items', "items.id", "=", "point-items.id")
             .where('point-items.point_id', "=", id)
             .select('items.title');
 
-        return response.json({ point, items });
+        return response.json({ serializedPoint, items });
     }
 }
 
